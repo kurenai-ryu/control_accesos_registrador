@@ -11,5 +11,4 @@ node_modules/
 datosInicialesBd.json
 npm-debug.log
 api_admin/publico/
-test.js
 .idea/
