@@ -17,7 +17,7 @@ let configuracion = {
     velocidad: Number(process.env.SENSOR_VELOCIDAD) || 57600,
     longitudClave: Number(process.env.SENSOR_LONGITUD_CLAVE) || 8
   },
-  baseDatos: {
+  microservicio: {
     tipo: process.env.BASE_DATOS_TIPO || 'postgres',
     servidor: process.env.BASE_DATOS_SERVIDOR || 'localhost',
     puerto: Number(process.env.BASE_DATOS_PUERTO) || 5432,

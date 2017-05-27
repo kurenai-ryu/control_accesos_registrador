@@ -1,24 +1,22 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('huellas', {
-    huellaImagen: {
-      field: 'imagen',
+    imagen: {
       type: DataTypes.STRING(73728),
       allowNull: false,
       validate: {
         notEmpty: {
           args: true,
-          msg: 'El campo huella imágen no puede estar vacío'
+          msg: 'El campo imágen no puede estar vacío'
         }
       }
     },
-    huellaPlantilla: {
-      field: 'plantilla',
+    plantilla: {
       type: DataTypes.STRING(1024),
       allowNull: false,
       validate: {
         notEmpty: {
           args: true,
-          msg: 'El campo huella plantilla no puede estar vacío'
+          msg: 'El campo plantilla no puede estar vacío'
         }
       }
     }
@@ -26,9 +24,13 @@ module.exports = (sequelize, DataTypes) => {
     timestamps: true,
     paranoid: false,
     comment: 'Huellas registradas en el sistema',
+    name: {
+      plural: 'Huellas',
+      singular: 'Huella'
+    },
     classMethods: {
       associate: function(modelo) {
-        this.belongsTo(modelo.Personal, {
+        this.belongsTo(modelo.Persona, {
           foreignKey: 'id'
         });
       }

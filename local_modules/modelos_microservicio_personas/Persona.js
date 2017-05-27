@@ -1,7 +1,6 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('personal', {
+  return sequelize.define('persona', {
     persona: {
-      field: 'usuario',
       type: DataTypes.STRING(45),
       allowNull: false,
       unique: true,
@@ -15,7 +14,11 @@ module.exports = (sequelize, DataTypes) => {
   }, {
     timestamps: true,
     paranoid: false,
-    comment: 'Personal registrado en el sistema',
+    comment: 'Personas registradas en el sistema',
+    name: {
+      plural: 'Personas',
+      singular: 'Persona'
+    },
     classMethods: {
       associate: function(modelo) {
         this.hasOne(modelo.Huella, {

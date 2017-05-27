@@ -231,6 +231,7 @@ class Sensor {
             return rechazar(err);
           }
           else {
+            logger.verbose(`Terminada extracción de datos`);
             return resolver(huella);
           }
         });
@@ -249,11 +250,9 @@ class Sensor {
           return resolver(this.respuesta);
         }
         else {
-          logger.error(this.respuesta.length);
-
-          (cfg.depuracion) ? logger.verbose(`Esperando respuesta...`) : '';
+          logger.info(`Esperando fin de paquete, ${this.respuesta.length} bytes recibidos...`);
         }
-      }, 500);
+      }, 1000);
     });
   };
 
@@ -417,7 +416,6 @@ class Sensor {
         let tamanoFinal = 36864;
         this._recibirDato(this._tamanoReal(tamanoFinal))
         .then((res) => {
-          logger.error(res.substring(100, 200));
           this._desarmarDato(res, tamanoFinal)
           .then((huella) => {
             return resolver(huella);
