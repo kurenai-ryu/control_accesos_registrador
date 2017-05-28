@@ -14,6 +14,8 @@ const key = fs.readFileSync(`${cfg.directorio}/${cfg.certificado.ruta}/${cfg.cer
 const cert = fs.readFileSync(`${cfg.directorio}/${cfg.certificado.ruta}/${cfg.certificado.nombre}.crt`);
 const sensor = new Sensor();
 
+global.ocupado = false;
+
 let capturarHuella = (buffer = 1, numIntentos = 20) => {
   return new Promise((resolver, rechazar) => {
     let intentos = Array(numIntentos).fill(0);
@@ -33,9 +35,7 @@ let capturarHuella = (buffer = 1, numIntentos = 20) => {
       })
       .catch((err) => {
         logger.error(err);
-        setTimeout(() => {
-          siguiente();
-        }, 500);
+        return rechazar(err);
       });
     })
     .then((err) => {
@@ -66,6 +66,147 @@ clienteLdap.on('connect', () => {
 clienteLdap.on('error', (err) => {
   logger.error(err);
 });
+
+let buscarUsuarios = () => {
+  return new Promise((resolver, rechazar) => {
+    clienteLdap.bind(cfg.ldap.usuario, cfg.ldap.clave, (err) => {
+      if(err) {
+        logger.error(err);
+        return rechazar(err);
+      }
+      else {
+        let usuarios = [];
+
+        clienteLdap.search(cfg.ldap.basedn, {
+          scope: 'sub',
+          filter: `(${cfg.ldap.identificador}=*)`
+        }, (err, res) => {
+          if(err) {
+            logger.error(err);
+          }
+          else {
+            res.on('searchEntry', (usuario) => {
+              usuarios.push(usuario.object.uid);
+            });
+            res.on('error', (err) => {
+              logger.error(err);
+              return rechazar(err);
+            });
+            res.on('end', (estado) => {
+              logger.info(`Búsqueda finalizada con estado ${estado}`);
+              return resolver(usuarios);
+            });
+          }
+        });
+      };
+    });
+  });
+};
+
+let sincronizarNombres = () => {
+  return new Promise((resolver, rechazar) => {
+    if(!global.ocupado) {
+      logger.info('Iniciada sincronización con LDAP');
+      global.ocupado = true;
+      buscarUsuarios()
+      .then((usuariosLdap) => {
+        each(usuariosLdap)
+        .call((usuarioLdap, indice, siguiente) => {
+          modelos.Persona.find({
+            where: {
+              persona: usuarioLdap
+            }
+          })
+          .then((res) => {
+            if(res) {
+              siguiente();
+            }
+            else {
+              modelos.Persona.create({
+                persona: usuarioLdap
+              })
+              .then((res) => {
+                siguiente();
+              })
+              .catch((err) => {
+                logger.error(err);
+                siguiente();
+              })
+            }
+          })
+          .catch((err) => {
+            logger.error(err);
+            siguiente();
+          })
+        })
+        .then((err) => {
+          if(err) {
+            global.ocupado = false;
+            return rechazar(err);
+          }
+          else {
+            modelos.Persona.findAll({
+              attributes: ['persona']
+            })
+            .then((usuarios) => {
+              each(usuarios)
+              .call((usuario, indice, siguiente) => {
+                if(usuariosLdap.indexOf(usuario.persona) == -1) {
+                  modelos.Persona.destroy({
+                    where: {
+                      persona: usuario.persona
+                    }
+                  })
+                  .then((res) => {
+                    siguiente();
+                  })
+                  .catch((err) => {
+                    logger.error(err.message);
+                    siguiente();
+                  });
+                }
+                else {
+                  siguiente();
+                };
+              })
+              .then((err) => {
+                if(err) {
+                  global.ocupado = false;
+                  return rechazar(err);
+                }
+                else {
+                  global.ocupado = false;
+                  return resolver('Terminada sincronización con LDAP');
+                };
+              });
+            })
+            .catch((err) => {
+              global.ocupado = false;
+              return rechazar(err);
+            });
+          };
+        });
+      })
+      .catch((err) => {
+        global.ocupado = false;
+        return rechazar(err);
+      });
+    }
+    else {
+      return rechazar('La sincronización aún está en curso');
+    }
+  });
+};
+
+setInterval(() => {
+  sincronizarNombres()
+  .then((res) => {
+    logger.info(res);
+  })
+  .catch((err) => {
+    logger.error(err);
+  });
+}, cfg.ldap.tiempoSincronizacion);
 
 let app = restify.createServer({
   spdy: {
@@ -128,8 +269,8 @@ app.on('after', (req, res, rout, err) => {
   };
 });
 
-app.on('uncaughtException', (req, res, route, error) => {
-  logger.error(error)
+app.on('uncaughtException', (req, res, route, err) => {
+  logger.error(err)
 });
 
 /**
@@ -146,17 +287,20 @@ app.on('uncaughtException', (req, res, route, error) => {
  * @apiSuccessExample {json} Success
  *    HTTP/2 200 OK
  *    {
- *      "token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c3VhcmlvIjoicGVwaXRvIiwicm9sZSI6InVzZXIiLCJpYXQiOjE0OTMwNjE4MTEsImV4cCI6MTQ5MzA3NjIxMX0.MDvw1C_Ij6NglnEe45eZfr0Af5fkhqRn4_Uu-6n4NDHxc-1Z-FWoGj_4Yga2FlIylSwQeimmHg4dThYqnFSAA9CZl0vTf_PEw9w3xQbPkSGFMpoMUnamt9W7QLyFs1BFmJJtaMd2YYbUOslQKfVMd7Z9hbOF8AMfYPdCgsYgOb4"
+ *      "error": false,
+ *      "mensaje": "Huella de usuario jdoe actualizada"
  *    }
- * @apiError {json} 401 No Autorizado
- *    HTTP/2 401
+ * @apiError {json} 500 Error interno
+ *    HTTP/2 500
  *    {
- *      "error":"Usuario o contraseña incorrecta"
+ *      "error": true,
+ *      "mensaje": "Conexión perdida con el sensor"
  *    }
  * @apiErrorExample {json} 401 No Autorizado
- *    HTTP/2 401
+ *    HTTP/2 500
  *    {
- *      "error":"Usuario o contraseña incorrecta"
+ *      "error": true,
+ *      "mensaje": "No se detectó ninguna huella"
  *    }
  */
 
@@ -229,8 +373,6 @@ app.post(`/v${cfg.api.version}/huellas`, (req, res) => {
         });
       })
       .then((huella) => {
-        logger.error(huella[1].length);
-
         return modelos.Huella.upsert({
           id: req.body.id,
           plantilla: huella[0],
@@ -264,6 +406,48 @@ app.post(`/v${cfg.api.version}/huellas`, (req, res) => {
     res.send(respuestas.error.interno.estado, {
       error: true,
       mensaje: err.message
+    });
+  });
+});
+
+/**
+ * @api {patch} /ldap Sincroniza manualmente los datos de LDAP con los de la base de datos
+ * @apiVersion 1.0.0
+ * @apiGroup LDAP
+ * @apiSuccess {Boolean} error Estado de error
+ * @apiSuccess {Object} mensaje Mensaje de respuesta
+ * @apiSuccessExample {json} Success
+ *    HTTP/2 200 OK
+ *    {
+ *      "error": false,
+ *      "mensaje": "Terminada sincronización con LDAP"
+ *    }
+ * @apiError {json} 409 Ocupado
+ *    HTTP/2 409
+ *    {
+ *      "error": true,
+ *      "mensaje": "La sincronización aún está en curso"
+ *    }
+ * @apiErrorExample {json} 409 Ocupado
+ *    HTTP/2 409
+ *    {
+ *      "error": true,
+ *      "mensaje": "La sincronización aún está en curso"
+ *    }
+ */
+
+app.patch(`/v${cfg.api.version}/ldap`, (req, res) => {
+  sincronizarNombres()
+  .then((msg) => {
+    res.send(respuestas.correcto.completado.estado, {
+      error: false,
+      mensaje: msg
+    });
+  })
+  .catch((err) => {
+    res.send(respuestas.error.ocupado.estado, {
+      error: false,
+      mensaje: err
     });
   });
 });

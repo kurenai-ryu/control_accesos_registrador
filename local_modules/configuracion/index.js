@@ -32,7 +32,8 @@ let configuracion = {
     basedn: process.env.LDAP_BASEDN || 'ou=usuarios,dc=empresa,dc=com',
     identificador: process.env.LDAP_IDENTIFICADOR || 'uid',
     usuario: process.env.LDAP_USUARIO_ADMIN || 'admin',
-    clave: process.env.LDAP_CLAVE_ADMIN || 'admin'
+    clave: process.env.LDAP_CLAVE_ADMIN || 'admin',
+    tiempoSincronizacion: process.env.LDAP_TIEMPO_SINCRONIZACION * 60 * 1000 || 5 * 60 * 1000
   }
 }
 

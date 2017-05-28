@@ -4,9 +4,10 @@ const cfg = require('configuracion');
 const logger = require('logger');
 
 class Sensor {
-  constructor(velocidad = 57600, direccion = 'ffffffff', tamanoPaquete = 128, cabecera = 'ef01') {
+  constructor(velocidad = 57600, tiempoEspera = 30000, direccion = 'ffffffff', tamanoPaquete = 128, cabecera = 'ef01') {
     this.serial = null;
     this.respuesta = '';
+    this.tiempoEspera = tiempoEspera;
 
     this.tamanos = [];
     this.tamanos.push(32);
@@ -243,25 +244,41 @@ class Sensor {
   };
 
   _recibirDato(tamanoRespuesta) {
+    let intervalo = null;
+    let detenerProceso = null;
+
     return new Promise((resolver, rechazar) => {
-      let intervalo = setInterval(() => {
+      intervalo = setInterval(() => {
         if(this.respuesta.length == (tamanoRespuesta * 2)) {
           clearInterval(intervalo);
+          clearTimeout(detenerProceso);
           return resolver(this.respuesta);
         }
         else {
           logger.info(`Esperando fin de paquete, ${this.respuesta.length} bytes recibidos...`);
         }
       }, 1000);
+
+      detenerProceso = setTimeout(() => {
+        clearInterval(intervalo);
+        this.serial.flush();
+        setTimeout(() => {
+          return rechazar('Conexión perdida con el sensor');
+        }, 1000);
+      }, this.tiempoEspera);
     });
   };
 
   _recibir(tamanoRespuesta = 12) {
+    let intervalo = null;
+    let detenerProceso = null;
+
     return new Promise((resolver, rechazar) => {
       setTimeout(() => {
-        let intervalo = setInterval(() => {
+        intervalo = setInterval(() => {
           if(this.respuesta.length >= (tamanoRespuesta * 2)) {
             clearInterval(intervalo);
+            clearTimeout(detenerProceso);
             let respuesta = this.respuesta.substring(0, tamanoRespuesta * 2);
             this.respuesta = this.respuesta.substring(tamanoRespuesta * 2);
             return resolver(respuesta);
@@ -271,6 +288,14 @@ class Sensor {
           }
         }, 500);
       }, 10);
+
+      detenerProceso = setTimeout(() => {
+        clearInterval(intervalo);
+        this.serial.flush();
+        setTimeout(() => {
+          return rechazar('Conexión perdida con el sensor');
+        }, 1000);
+      }, this.tiempoEspera);
     });
   };
 
@@ -292,6 +317,9 @@ class Sensor {
             else {
               return rechazar(`El tipo de paquete no está definido: ${respuesta}`);
             }
+          })
+          .catch((err) => {
+            return rechazar(err)
           });
         });
       }
