@@ -64,6 +64,7 @@ clienteLdap.on('connect', () => {
 });
 
 clienteLdap.on('error', (err) => {
+  logger.error("Error de cliente ldap")
   logger.error(err);
 });
 
@@ -71,6 +72,7 @@ let buscarUsuarios = () => {
   return new Promise((resolver, rechazar) => {
     clienteLdap.bind(cfg.ldap.usuario, cfg.ldap.clave, (err) => {
       if(err) {
+        logger.error("Error al ldap bind");
         logger.error(err);
         return rechazar(err);
       }
@@ -82,6 +84,7 @@ let buscarUsuarios = () => {
           filter: `(${cfg.ldap.identificador}=*)`
         }, (err, res) => {
           if(err) {
+            logger.error("Error al buscar ldap")
             logger.error(err);
           }
           else {
@@ -89,6 +92,7 @@ let buscarUsuarios = () => {
               usuarios.push(usuario.object.uid);
             });
             res.on('error', (err) => {
+              logger.error("error de res ldap");
               logger.error(err);
               return rechazar(err);
             });
@@ -308,7 +312,7 @@ app.post(`/v${cfg.api.version}/huellas`, (req, res) => {
   modelos.Persona.findById(req.body.id)
   .then((persona) => {
     if(persona) {
-      sensor.abrirPuerto('/dev/ttyUSB0')
+      sensor.abrirPuerto('/dev/serial0') //test en raspberry
       .then((ser) => {
         return capturarHuella(1);
       })
@@ -387,6 +391,7 @@ app.post(`/v${cfg.api.version}/huellas`, (req, res) => {
         });
       })
       .catch((err) => {
+      	sensor.cerrarPuerto();
         logger.error(err);
         res.send(respuestas.error.interno.estado, {
           error: true,

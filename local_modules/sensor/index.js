@@ -346,12 +346,13 @@ class Sensor {
         rechazar(this.serial);
       }).on('data', (datos) => {
         this.respuesta = this.respuesta + datos.toString('hex');
+	      logger.verbose(this.respuesta); //crece
       })
     });
   };
 
   cerrarPuerto() {
-    this.serial.close(() => {
+    if (this.serial) this.serial.close(() => {
       logger.info(`Puerto serial cerrado`);
     });
   };
