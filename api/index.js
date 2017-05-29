@@ -25,7 +25,13 @@ let capturarHuella = (buffer = 1, numIntentos = 20) => {
       .then((res) => {
         if(res == '00') {
           logger.verbose('Huella detectada');
-          return resolver(sensor.img2Tz(buffer));
+          if (buffer==2){
+            sensor.upImage().then((img)=>{
+              sensor.imagen = img;
+              return resolver(sensor.img2Tz(buffer));
+            })
+          }else
+            return resolver(sensor.img2Tz(buffer));
         }
         else {
           setTimeout(() => {
@@ -353,14 +359,8 @@ app.post(`/v${cfg.api.version}/huellas`, (req, res) => {
                 })
                 break;
               case 1:
-                sensor.upImage()
-                .then((imagen) => {
-                  huella[promesa] = imagen;
-                  siguiente();
-                })
-                .catch((err) => {
-                  return rechazar(err);
-                })
+                huella[promesa] = sensor.imagen;
+                siguiente();
                 break;
               default:
                 return rechazar('Error al acceder al sensor');
