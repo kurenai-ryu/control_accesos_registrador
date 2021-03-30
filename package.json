@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "Hardware registrador de huellas",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "base_datos" : "zoo NODE_ENV=production --zoofile .env node base_datos/index.js",
+    "start" : "zoo NODE_ENV=production --zoofile .env node api/index.js",
+    "gulp": "gulp"
+  },
   "keywords": [
     "raspberry",
     "zfm20",

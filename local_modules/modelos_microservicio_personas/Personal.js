@@ -1,6 +1,7 @@
 module.exports = (sequelize, DataTypes) => {
   return sequelize.define('personal', {
     persona: {
+      field: 'usuario',
       type: DataTypes.STRING(45),
       allowNull: false,
       unique: true,
@@ -10,11 +11,27 @@ module.exports = (sequelize, DataTypes) => {
           msg: 'El campo usuario no puede estar vacío'
         }
       }
+    },
+    tipo: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
+    },
+    habilitado: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
+    ingreso: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
     }
   }, {
-    timestamps: true,
+    freezeTableName: true,
+    timestamps: false,
     paranoid: false,
-    comment: 'Personas registradas en el sistema',
+    comment: 'Personal registrado en el sistema',
     name: {
       plural: 'Personas',
       singular: 'Persona'
@@ -22,7 +39,8 @@ module.exports = (sequelize, DataTypes) => {
     classMethods: {
       associate: function(modelo) {
         this.hasOne(modelo.Huella, {
-          foreignKey: 'id'
+          foreignKey: 'id',
+          onDelete: 'cascade'
         });
       }
     }

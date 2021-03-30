@@ -132,8 +132,9 @@ let sincronizarNombres = () => {
               siguiente();
             }
             else {
-              modelos.Persona.create({
-                persona: usuarioLdap
+              modelos.Personal.create({
+                persona: usuarioLdap,
+                habilitado: true
               })
               .then((res) => {
                 siguiente();
@@ -155,14 +156,16 @@ let sincronizarNombres = () => {
             return rechazar(err);
           }
           else {
-            modelos.Persona.findAll({
+            modelos.Personal.findAll({
               attributes: ['persona']
             })
             .then((usuarios) => {
               each(usuarios)
               .call((usuario, indice, siguiente) => {
                 if(usuariosLdap.indexOf(usuario.persona) == -1) {
-                  modelos.Persona.destroy({
+                  modelos.Personal.update({
+                    habilitado: false
+                  },{
                     where: {
                       persona: usuario.persona
                     }
@@ -208,7 +211,7 @@ let sincronizarNombres = () => {
   });
 };
 
-setInterval(() => {
+/*setInterval(() => {
   sincronizarNombres()
   .then((res) => {
     logger.info(res);
@@ -216,7 +219,7 @@ setInterval(() => {
   .catch((err) => {
     logger.error(err);
   });
-}, cfg.ldap.tiempoSincronizacion);
+}, cfg.ldap.tiempoSincronizacion);*/
 
 let app = restify.createServer({
   spdy: {
@@ -315,10 +318,10 @@ app.on('uncaughtException', (req, res, route, err) => {
  */
 
 app.post(`/v${cfg.api.version}/huellas`, (req, res) => {
-  modelos.Persona.findById(req.body.id)
+  modelos.Personal.findById(req.body.id)
   .then((persona) => {
     if(persona) {
-      sensor.abrirPuerto('/dev/serial0') //test en raspberry
+      sensor.abrirPuerto(cfg.sensor.puerto) //test en raspberry
       .then((ser) => {
         return capturarHuella(1);
       })

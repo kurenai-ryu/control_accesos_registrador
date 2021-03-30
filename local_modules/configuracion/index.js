@@ -11,6 +11,7 @@ let configuracion = {
     version: process.env.API_VERSION || 1
   },
   sensor: {
+    puerto: process.env.SENSOR_PUERTO || '/dev/serial0',
     cabecera: process.env.SENSOR_CABECERA || 'ef01',
     direccion: process.env.SENSOR_DIRECCION || 'ffffffff',
     tamanoPaquete: Number(process.env.SENSOR_TAMANO_PAQUETE) || 128,
