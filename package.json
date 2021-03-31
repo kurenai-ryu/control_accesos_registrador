@@ -1,43 +1,41 @@
 {
-  "name": "control_accesos",
+  "name": "control_accesos_registrador",
   "version": "1.0.0",
   "description": "Hardware registrador de huellas",
   "main": "index.js",
   "scripts": {
-    "base_datos" : "zoo NODE_ENV=production --zoofile .env node base_datos/index.js",
-    "start" : "zoo NODE_ENV=production --zoofile .env node api/index.js",
-    "gulp": "gulp"
+    "base_datos": "node base_datos/index.js",
+    "start": "node api/index.js",
+    "gulp": "gulp",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kurenai-ryu/control_accesos_registrador.git"
   },
   "keywords": [
-    "raspberry",
-    "zfm20",
-    "fingerprint",
-    "node",
-    "postgresql",
-    "restify"
+    "raspberry"
   ],
-  "author": "Daniel Jimenez Jerez",
+  "author": "DJJ",
   "license": "ISC",
-  "dependencies": {
-    "array-compare": "^2.0.0",
-    "each": "^0.6.1",
-    "ldapjs": "^1.0.1",
-    "moment": "^2.18.1",
-    "morgan": "^1.8.2",
-    "restify": "^4.3.0",
-    "spdy": "^3.4.7"
+  "bugs": {
+    "url": "https://github.com/kurenai-ryu/control_accesos_registrador/issues"
   },
-  "devDependencies": {
-    "configuracion": "file:local_modules/configuracion",
-    "logger": "file:local_modules/logger",
-    "modelos_microservicio_personas": "file:local_modules/modelos_microservicio_personas",
-    "obtener_ip": "file:local_modules/obtener_ip",
-    "sensor": "file:local_modules/sensor",
-    "gulp": "^3.9.1",
-    "gulp-watch": "^4.3.11",
-    "mocha": "^3.2.0",
-    "should": "^11.2.0",
-    "supertest": "^3.0.0",
-    "zoo": "^0.1.9"
-  }
+  "homepage": "https://github.com/kurenai-ryu/control_accesos_registrador#readme",
+  "dependencies": {
+    "each": "^1.2.2",
+    "ldapjs": "^2.2.4",
+    "lodash": "^4.17.21",
+    "minimist": "^1.2.5",
+    "moment": "^2.29.1",
+    "morgan": "^1.10.0",
+    "object-path": "^0.11.5",
+    "pg": "^8.5.1",
+    "restify": "^8.5.1",
+    "sequelize": "^6.6.2",
+    "serialport": "^9.0.7",
+    "spdy": "^4.0.2",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {}
 }

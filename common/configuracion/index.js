@@ -1,6 +1,6 @@
 let configuracion = {
   depuracion: Boolean(Number(process.env.APP_DEPURACION)) || false,
-  directorio: process.env.PROY_DIR || '/opt/control_accesos/backend',
+  directorio: process.env.PROY_DIR || process.cwd(),
   certificado: {
     nombre: process.env.CERT_NOMBRE || 'api_control_accesos',
     ruta: process.env.CERT_DIR || 'certs'

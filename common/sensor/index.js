@@ -1,7 +1,7 @@
 const SerialPort = require('serialport');
 const each = require('each');
-const cfg = require('configuracion');
-const logger = require('logger');
+const cfg = require('../configuracion');
+const logger = require('../logger');
 
 class Sensor {
   constructor(velocidad = 57600, tiempoEspera = 30000, direccion = 'ffffffff', tamanoPaquete = 128, cabecera = 'ef01') {

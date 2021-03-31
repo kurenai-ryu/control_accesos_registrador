@@ -1,8 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 const Sequelize = require('sequelize');
-const cfg = require('configuracion');
-const logger = require('logger');
+const cfg = require('../configuracion');
+const logger = require('../logger');
 
 module.exports = {};
 
