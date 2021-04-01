@@ -309,7 +309,13 @@ app.patch(`/v${cfg.api.version}/huellas`, (req, res) => {
         paquetes.forEach(paq => {
           seq = seq.then(()=>{
             logger.debug("paq" + paq)
-            return sensor._enviar(paq);
+            //return sensor._enviar(paq); _enviar waits response
+            return new Promise((resolve, rej)=> {
+              sensor.serial.write(paq,'hex', (err) => {
+                if (err) return reject('error on paq.write');
+                sensor.serial.drain(() => setTimeout(() => resolve(), 100)); //give 100ms more
+              });
+            });
           })
         })
         return seq

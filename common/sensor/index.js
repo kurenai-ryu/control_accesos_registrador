@@ -305,7 +305,7 @@ class Sensor {
     return new Promise((resolver, rechazar) => {
       if(this.serial != null) {
         (cfg.depuracion) ? logger.verbose(`Enviando paquete: ${paquete}`) : '';
-        this.serial.write(new Buffer(paquete, 'hex'), () => {
+        this.serial.write(paquete, 'hex', () => {
           this.serial.drain();
           this._recibir(tamanoRespuesta)
           .then((respuesta) => {
