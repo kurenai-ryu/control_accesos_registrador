@@ -8,7 +8,7 @@ const Sensor = require('../common/sensor');
 const logger = require('../common/logger');
 const ldap = require('ldapjs');
 const modelos = require('../common/modelos_microservicio_personas');
-const respuestas = require(`${cfg.directorio}/respuestas`);
+const respuestas = require(`../common/respuestas`);
 
 const key = fs.readFileSync(`${cfg.directorio}/${cfg.certificado.ruta}/${cfg.certificado.nombre}.key`);
 const cert = fs.readFileSync(`${cfg.directorio}/${cfg.certificado.ruta}/${cfg.certificado.nombre}.crt`);
@@ -265,8 +265,9 @@ app.on('MethodNotAllowed', (req, res) => {
 });
 
 app.pre(restify.pre.sanitizePath());
-app.use(restify.queryParser());
-app.use(restify.bodyParser());
+app.use(restify.plugins.queryParser({mapParams: true}));
+app.use(restify.plugins.bodyParser({mapParams: true, mapFiles: true}));
+app.use(restify.plugins.acceptParser(app.acceptable));
 
 app.pre((req, res, next) => {
   let client = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -285,6 +286,48 @@ app.on('after', (req, res, rout, err) => {
 app.on('uncaughtException', (req, res, route, err) => {
   logger.error(err)
 });
+
+app.patch(`/v${cfg.api.version}/huellas`, (req, res) => {
+  let huellas = null;
+  let sequence = Promise.resolve();
+  modelos.Huella.findAll({
+    attributes: ['id', 'plantilla']
+  }).then((datos) => {
+    if (!datos) return Promise.reject('Error: sin huellas')
+    huellas = datos
+    return sensor.abrirPuerto(cfg.sensor.puerto) //test en raspberry
+  }).then(() => {
+    huellas.forEach(huella => {
+      //huella.id, huella.plantilla
+      sequence = sequence.then(()=> {
+        logger.debug("downChar")
+        return sensor.downChar();
+      }).then(() => {
+        logger.debug("enviar plantilla " + huella.plantilla);
+        let paquetes = sensor.armarDato(huella.plantilla)
+        let seq = Promise.resolve()
+        paquetes.forEach(paq => {
+          seq = seq.then(()=>{
+            logger.debug("paq" + paq)
+            return sensor._enviar(paq);
+          })
+        })
+        return seq
+      }).then(() => {
+        logger.debug("store " + huella.id)
+        return sensor.store(huella.id);
+      })
+    });
+    return sequence;
+  }).then(()=>{
+    logger.info ("huellas descargadas!")
+    sensor.cerrarPuerto();
+  }).catch( e => {
+    logger.debug(e);
+    sensor.cerrarPuerto();
+  })
+
+})
 
 /**
  * @api {post} /huellas Grabar una nueva huella o actualizar una existente
@@ -316,7 +359,6 @@ app.on('uncaughtException', (req, res, route, err) => {
  *      "mensaje": "No se detectó ninguna huella"
  *    }
  */
-
 app.post(`/v${cfg.api.version}/huellas`, (req, res) => {
   modelos.Personal.findById(req.body.id)
   .then((persona) => {

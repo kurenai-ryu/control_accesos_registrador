@@ -1,3 +1,4 @@
+require('dotenv').config();
 let configuracion = {
   depuracion: Boolean(Number(process.env.APP_DEPURACION)) || false,
   directorio: process.env.PROY_DIR || process.cwd(),

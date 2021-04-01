@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
-const Sequelize = require('sequelize');
+//const Sequelize = require('sequelize');
+const { Sequelize, DataTypes } = require('sequelize');
 const cfg = require('../configuracion');
 const logger = require('../logger');
 
@@ -10,7 +11,7 @@ let sequelize = new Sequelize(cfg.microservicio.bd, cfg.microservicio.usuario, c
   host: cfg.microservicio.servidor,
   port: cfg.microservicio.puerto,
   dialect: cfg.microservicio.tipo,
-  logging: (cfg.depuracion) ? logger.debug : false,
+  logging: (cfg.depuracion) ? console.log /*logger.debug*/ : false,
   reconnect: {
     max_retries: 1,
     onRetry: (intento) => {
@@ -26,6 +27,7 @@ sequelize.authenticate()
 })
 .catch((error) => {
   logger.error(`No se puede conectar con la base de datos ${cfg.microservicio.bd}`);
+  logger.debug(JSON.stringify(cfg.microservicio));
   process.exit(1);
 });
 
@@ -35,7 +37,8 @@ fs.readdirSync(__dirname)
 })
 .forEach(function(archivo) {
   logger.debug(`Cargando modelo: ${archivo}`);
-  var modelo = sequelize.import(`${__dirname}/${archivo}`);
+  //var modelo = sequelize.import(`${__dirname}/${archivo}`);
+  let modelo = require(path.join(__dirname, archivo))(sequelize, DataTypes)
   var nombre = archivo.substr(0, archivo.lastIndexOf('.'));
   module.exports[nombre]=modelo;
 });

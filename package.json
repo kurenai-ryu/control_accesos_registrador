@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/kurenai-ryu/control_accesos_registrador#readme",
   "dependencies": {
+    "dotenv": "^8.2.0",
     "each": "^1.2.2",
     "ldapjs": "^2.2.4",
     "lodash": "^4.17.21",

@@ -149,7 +149,7 @@ class Sensor {
 
   armarDato(datos) {
     if(this._verificarPaqueteValido(datos)) {
-      if(datos.length != 1024) {
+      if(datos.length >= 102400) {
         logger.error('Tamaño de paquete inválido');
         process.exit(1);
         return false;
