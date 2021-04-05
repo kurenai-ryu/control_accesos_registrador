@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('personal', {
+  const Personal = sequelize.define('personal', {
     persona: {
       field: 'usuario',
       type: DataTypes.STRING(45),
@@ -36,13 +36,12 @@ module.exports = (sequelize, DataTypes) => {
       plural: 'Personas',
       singular: 'Persona'
     },
-    classMethods: {
-      associate: function(modelo) {
-        this.hasOne(modelo.Huella, {
-          foreignKey: 'id',
-          onDelete: 'cascade'
-        });
-      }
-    }
   });
+  Personal.associate = function(modelo) {
+    this.hasOne(modelo.Huella, {
+      foreignKey: 'id',
+      onDelete: 'cascade'
+    });
+  }
+  return Personal;
 };

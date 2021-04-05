@@ -227,7 +227,7 @@ class Sensor {
             siguiente();
           }, 50);
         })
-        .then((err) => {
+        .next((err) => {
           if(err) {
             return rechazar(err);
           }

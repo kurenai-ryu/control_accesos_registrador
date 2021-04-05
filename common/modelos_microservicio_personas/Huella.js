@@ -1,5 +1,5 @@
 module.exports = (sequelize, DataTypes) => {
-  return sequelize.define('huellas', {
+  const Huella = sequelize.define('huellas', {
     imagen: {
       field: 'huella_imagen',
       type: DataTypes.STRING(73728),
@@ -37,13 +37,12 @@ module.exports = (sequelize, DataTypes) => {
       plural: 'Huellas',
       singular: 'Huella'
     },
-    classMethods: {
-      associate: function(modelo) {
-        this.belongsTo(modelo.Personal, {
-          foreignKey: 'id',
-          onDelete: 'cascade'
-        });
-      }
-    }
   });
+  Huella.associate = function(modelo) {
+    this.belongsTo(modelo.Personal, {
+      foreignKey: 'id',
+      onDelete: 'cascade'
+    });
+  }
+  return Huella;
 };

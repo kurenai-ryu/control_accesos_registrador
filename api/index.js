@@ -288,27 +288,42 @@ app.on('uncaughtException', (req, res, route, err) => {
 });
 
 app.patch(`/v${cfg.api.version}/huellas`, (req, res) => {
-  let huellas = null;
-  let sequence = Promise.resolve();
+  let huellas = null;  
   modelos.Huella.findAll({
-    attributes: ['id', 'plantilla']
+    attributes: ['id', 'plantilla'],
+    order: [['id', 'ASC']],
+    include : [{
+      model: modelos.Personal,
+      attributes: [],
+      where: {
+        habilitado: true,
+      }
+    }]
   }).then((datos) => {
     if (!datos) return Promise.reject('Error: sin huellas')
     huellas = datos
+    logger.debug ("huellas habilitadas " + datos.length);
     return sensor.abrirPuerto(cfg.sensor.puerto) //test en raspberry
+  }).then(()=>{
+    res.send(respuestas.correcto.completado.estado, {
+      error: false,
+      mensaje: "Inciando Limpieza y Descarga de Huellas"
+    });
+    logger.info("Limpiando Sensor...");
+    return sensor.empty();
   }).then(() => {
+    let sequence = Promise.resolve();
     huellas.forEach(huella => {
       //huella.id, huella.plantilla
       sequence = sequence.then(()=> {
-        logger.debug("downChar")
+        logger.info("Inciando descarga de huella id:" + huella.id)
         return sensor.downChar();
       }).then(() => {
-        logger.debug("enviar plantilla " + huella.plantilla);
+        logger.debug("enviar plantilla "); // + huella.plantilla);
         let paquetes = sensor.armarDato(huella.plantilla)
         let seq = Promise.resolve()
         paquetes.forEach(paq => {
           seq = seq.then(()=>{
-            logger.debug("paq" + paq)
             //return sensor._enviar(paq); _enviar waits response
             return new Promise((resolve, rej)=> {
               sensor.serial.write(paq,'hex', (err) => {
@@ -320,8 +335,30 @@ app.patch(`/v${cfg.api.version}/huellas`, (req, res) => {
         })
         return seq
       }).then(() => {
-        logger.debug("store " + huella.id)
         return sensor.store(huella.id);
+      }).catch(err=>{
+        logger.debug("store " + huella.id)
+        logger.debug (err)
+        return Promise.reject("Error al almacenar")
+      }).then(() => {
+        return sensor.loadChar(huella.id);
+      }).then(()=>{
+        return sensor.upChar()
+      }).catch(err => {
+        logger.debug("load&up " + huella.id)
+        logger.debug (err);
+        return Promise.reject("Error al leer huella " + huella.id);
+      }).then((h)=> {
+        if (h != huella.plantilla){
+          logger.debug ("plantilla: " + huella.plantilla);
+          logger.debug ("recibido : " + h);
+          return Promise.reject("Huellas no coinciden!");
+        }
+        logger.info("correcto!")
+        return Promise.resolve("Huellas coniciden")
+      }).catch(err => {
+        logger.warn(err)
+        return Promise.resolve(); //continuar?
       })
     });
     return sequence;
@@ -330,6 +367,10 @@ app.patch(`/v${cfg.api.version}/huellas`, (req, res) => {
     sensor.cerrarPuerto();
   }).catch( e => {
     logger.debug(e);
+    res.send(respuestas.error.datosErroneos.estado, {
+      error: true,
+      mensaje: "Error al enviar datos"
+    });
     sensor.cerrarPuerto();
   })
 
