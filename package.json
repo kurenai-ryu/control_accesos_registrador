@@ -33,7 +33,7 @@
     "object-path": "^0.11.8",
     "pg": "^8.5.1",
     "restify": "^8.5.1",
-    "sequelize": "^6.6.2",
+    "sequelize": "^6.21.4",
     "serialport": "^9.0.7",
     "spdy": "^4.0.2",
     "winston": "^3.3.3"
